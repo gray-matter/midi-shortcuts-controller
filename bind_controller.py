@@ -11,7 +11,7 @@ from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
 from input import WindowInput
-from input.pulse_input import PulseInput
+from input.pulse_sink_input import PulseSinkInput
 from midi.MidiController import MidiController
 
 
@@ -23,7 +23,7 @@ def bootstrap_logging():
     logging.getLogger().setLevel(logging.INFO)
 
 
-async def refresh_knobs(knobs: List[PulseInput], pulse_client: PulseAsync):
+async def refresh_knobs(knobs: List[PulseSinkInput], pulse_client: PulseAsync):
     input_list = await pulse_client.sink_input_list()
 
     for knob in knobs:
@@ -31,7 +31,7 @@ async def refresh_knobs(knobs: List[PulseInput], pulse_client: PulseAsync):
         knob.refresh_sinks(input_list)
 
 
-async def pulse_loop(pulse_client: PulseAsync, knobs: Dict[str, PulseInput]):
+async def pulse_loop(pulse_client: PulseAsync, knobs: Dict[str, PulseSinkInput]):
     await refresh_knobs(list(knobs.values()), pulse_client)
 
     async for ev in pulse_client.subscribe_events('all'):
@@ -40,7 +40,7 @@ async def pulse_loop(pulse_client: PulseAsync, knobs: Dict[str, PulseInput]):
             await refresh_knobs(list(knobs.values()), pulse_client)
 
 
-async def inputs_loop(knobs: Dict[str, PulseInput]):
+async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
     wi_1 = WindowInput("spotify.Spotify", [uinput.KEY_1])
     wi_2 = WindowInput("spotify.Spotify", [uinput.KEY_2])
     wi_3 = WindowInput("spotify.Spotify", [uinput.KEY_3])
@@ -73,7 +73,7 @@ async def main():
     bootstrap_logging()
 
     async with pulsectl_asyncio.PulseAsync('pad') as pulse_client:
-        knobs = {"spotify": PulseInput("spotify", pulse_client)}
+        knobs = {"spotify": PulseSinkInput("spotify", pulse_client)}
 
         pulse_task = asyncio.create_task(pulse_loop(pulse_client, knobs))
         inputs_task = asyncio.create_task(inputs_loop(knobs))

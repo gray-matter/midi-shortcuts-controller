@@ -4,7 +4,7 @@ from pulsectl import PulseVolumeInfo, PulseSinkInputInfo
 from pulsectl_asyncio import PulseAsync
 
 
-class PulseInput:
+class PulseSinkInput:
     APP_NAME_KEY = 'application.name'
     MEDIA_NAME_KEY = 'media.name'
 
@@ -15,7 +15,7 @@ class PulseInput:
 
     def _matches(self, source: PulseSinkInputInfo) -> bool:
         props = source.proplist
-        return PulseInput.APP_NAME_KEY in props and props[PulseInput.APP_NAME_KEY] == self._app_name
+        return PulseSinkInput.APP_NAME_KEY in props and props[PulseSinkInput.APP_NAME_KEY] == self._app_name
 
     def refresh_sinks(self, input_list: List[PulseSinkInputInfo]):
         self._sinks = list(filter(self._matches, input_list))
