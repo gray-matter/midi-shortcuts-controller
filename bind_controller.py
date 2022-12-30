@@ -12,7 +12,7 @@ from pulsectl_asyncio import PulseAsync
 
 from input import WindowInput
 from input.pulse_input import PulseInput
-from midi.MidController import MidiController
+from midi.MidiController import MidiController
 
 
 def bootstrap_logging():
@@ -42,10 +42,29 @@ async def pulse_loop(pulse_client: PulseAsync, knobs: Dict[str, PulseInput]):
 
 async def inputs_loop(knobs: Dict[str, PulseInput]):
     wi_1 = WindowInput("spotify.Spotify", [uinput.KEY_1])
+    wi_2 = WindowInput("spotify.Spotify", [uinput.KEY_2])
+    wi_3 = WindowInput("spotify.Spotify", [uinput.KEY_3])
+    wi_4 = WindowInput("spotify.Spotify", [uinput.KEY_4])
+
+    wis_1 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
+    wis_2 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
+    wis_3 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
+    wis_4 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
+
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
-    ctrl.bind_note_on(38, lambda msg: wi_1.send())
-    ctrl.bind_control_change(0, lambda msg: knobs['spotify'].set_volume(msg.value / 100.))
+
+    ctrl.bind_note_on(1, lambda msg: wi_1.send())
+    ctrl.bind_note_on(2, lambda msg: wi_2.send())
+    ctrl.bind_note_on(3, lambda msg: wi_3.send())
+    ctrl.bind_note_on(4, lambda msg: wi_4.send())
+
+    ctrl.bind_control_change(1, lambda msg: wis_1.send())
+    ctrl.bind_control_change(2, lambda msg: wis_2.send())
+    ctrl.bind_control_change(3, lambda msg: wis_3.send())
+    ctrl.bind_control_change(4, lambda msg: wis_4.send())
+
+    ctrl.bind_control_change(11, lambda msg: knobs['spotify'].set_volume(msg.value / 100.))
 
     await ctrl.receive()
 

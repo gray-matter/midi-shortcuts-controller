@@ -40,7 +40,6 @@ class MidiController:
     async def receive(self):
         while True:
             for msg in self._inport.iter_pending():
-                logging.info(msg)
                 await self._dispatch(msg)
             await asyncio.sleep(0.1)
 
