@@ -2,9 +2,8 @@ import asyncio
 import logging
 import re
 import sys
-from typing import List, Dict, Awaitable, Coroutine, Any, Callable
+from typing import List, Dict
 
-import mido
 import pulsectl_asyncio
 import uinput
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
@@ -12,8 +11,8 @@ from pulsectl_asyncio import PulseAsync
 
 from browser.browser_tab_focus import BrowserTabFocus
 from input import WindowInput
-from input.browser_input import BrowserInput
 from input.pulse_sink_input import PulseSinkInput
+from input.pulse_sinks import PulseSinks
 from midi.MidiController import MidiController
 
 
@@ -33,16 +32,26 @@ async def refresh_sink_inputs(knobs: List[PulseSinkInput], pulse_client: PulseAs
         knob.refresh_sinks(input_list)
 
 
-async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkInput]):
+async def refresh_sinks(sinks: PulseSinks, pulse_client: PulseAsync):
+    sinks.refresh(await pulse_client.sink_list())
+
+
+async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkInput],
+                     sinks: PulseSinks):
     await refresh_sink_inputs(list(sink_inputs.values()), pulse_client)
+    await refresh_sinks(sinks, pulse_client)
 
     async for ev in pulse_client.subscribe_events('all'):
         if ev.facility in [PulseEventFacilityEnum.sink_input] and \
                 ev.t in [PulseEventTypeEnum.new, PulseEventTypeEnum.remove]:
             await refresh_sink_inputs(list(sink_inputs.values()), pulse_client)
 
+        if ev.facility in [PulseEventFacilityEnum.sink] and \
+                ev.t in [PulseEventTypeEnum.new, PulseEventTypeEnum.remove]:
+            await refresh_sinks(sinks, pulse_client)
 
-async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
+
+async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks):
     wi_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_1])
     wi_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_2])
     wi_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_3])
@@ -74,7 +83,10 @@ async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
     ctrl.bind_control_change(3, lambda msg: wis_3.send())
     ctrl.bind_control_change(4, lambda msg: wis_4.send())
 
-    ctrl.bind_control_change(11, lambda msg: knobs['spotify'].set_volume(msg.value / 100.))
+    ctrl.bind_control_change(11, lambda msg: sinks.set_volume(msg.value / 127.))
+
+    ctrl.bind_control_change(15, lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
+    ctrl.bind_control_change(16, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
 
     await ctrl.receive()
 
@@ -82,11 +94,13 @@ async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
 async def main():
     bootstrap_logging()
 
-    async with pulsectl_asyncio.PulseAsync('pad') as pulse_client:
-        knobs = {"spotify": PulseSinkInput("spotify", pulse_client)}
+    async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
+        sink_inputs = {"spotify": PulseSinkInput("spotify", None, pulse_client),
+                       "firefox-callback": PulseSinkInput("Firefox", "AudioCallbackDriver", pulse_client)}
+        sinks = PulseSinks(pulse_client)
 
-        pulse_task = asyncio.create_task(pulse_loop(pulse_client, knobs))
-        inputs_task = asyncio.create_task(inputs_loop(knobs))
+        pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks))
+        inputs_task = asyncio.create_task(inputs_loop(sink_inputs, sinks))
 
         await pulse_task
         await inputs_task

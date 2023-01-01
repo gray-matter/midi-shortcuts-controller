@@ -25,7 +25,8 @@ class WindowInput:
         target_windows = list(filter(is_target_window, Window.list()))
 
         if len(target_windows) == 0:
-            logging.warning(f'Could not find window with class {self._window_class_pattern} and name {self._window_name_pattern}')
+            logging.warning(f'Could not find window with class {self._window_class_pattern.pattern} and name '
+                            f'{self._window_name_pattern.pattern}')
             return
 
         if self._only_first:
