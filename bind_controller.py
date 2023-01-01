@@ -43,17 +43,20 @@ async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkI
 
 
 async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
-    wi_1 = WindowInput("spotify.Spotify", [uinput.KEY_1])
-    wi_2 = WindowInput("spotify.Spotify", [uinput.KEY_2])
-    wi_3 = WindowInput("spotify.Spotify", [uinput.KEY_3])
-    wi_4 = WindowInput("spotify.Spotify", [uinput.KEY_4])
+    wi_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_1])
+    wi_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_2])
+    wi_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_3])
+    wi_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_4])
 
-    wis_1 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
-    wis_2 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
-    wis_3 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
-    wis_4 = WindowInput("spotify.Spotify", [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
+    wis_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
+    wis_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
+    wis_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
+    wis_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
 
     bi = BrowserTabFocus(re.compile('firefox'), re.compile('PulseAudio.*'))
+
+    zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
+                                   [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
@@ -62,7 +65,9 @@ async def inputs_loop(knobs: Dict[str, PulseSinkInput]):
     ctrl.bind_note_on(2, lambda msg: wi_2.send())
     ctrl.bind_note_on(3, lambda msg: wi_3.send())
     ctrl.bind_note_on(4, lambda msg: wi_4.send())
-    ctrl.bind_note_on(21, lambda msg: bi.focus())
+
+    ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
+    ctrl.bind_note_on(22, lambda msg: bi.focus())
 
     ctrl.bind_control_change(1, lambda msg: wis_1.send())
     ctrl.bind_control_change(2, lambda msg: wis_2.send())

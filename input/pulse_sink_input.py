@@ -19,7 +19,7 @@ class PulseSinkInput:
 
     def refresh_sinks(self, input_list: List[PulseSinkInputInfo]):
         self._sinks = list(filter(self._matches, input_list))
-        logging.info(f'Found {len(self._sinks)} sink(s) for application {self._app_name}')
+        logging.debug(f'Found {len(self._sinks)} sink(s) for application {self._app_name}')
 
     async def set_volume(self, percentage: float):
         """

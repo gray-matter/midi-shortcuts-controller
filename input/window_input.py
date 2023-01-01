@@ -1,6 +1,7 @@
 import asyncio
+import re
 import time
-from typing import List
+from typing import List, Optional
 
 import uinput
 from wmctrl import Window
@@ -8,18 +9,23 @@ import logging
 
 
 class WindowInput:
-    # TODO: Come back to previous window?
-    def __init__(self, window_class: str, virtual_input: List[int], only_first: bool = False):
-        self._window_class = window_class
+    def __init__(self, window_class_pattern: re.Pattern, window_name_pattern: Optional[re.Pattern], virtual_input: List[int],
+                 only_first: bool = True):
+        self._window_class_pattern = window_class_pattern
+        self._window_name_pattern = window_name_pattern
         self._input = virtual_input
         self._only_first = only_first
         self._keyboard = uinput.Device(virtual_input)
 
     async def send(self):
-        target_windows = list(filter(lambda w: w.wm_class == self._window_class, Window.list()))
+        def is_target_window(w: Window):
+            return self._window_class_pattern is not None and self._window_class_pattern.search(w.wm_class) and \
+                self._window_name_pattern is not None and self._window_name_pattern.search(w.wm_name)
+
+        target_windows = list(filter(is_target_window, Window.list()))
 
         if len(target_windows) == 0:
-            logging.warning(f'Could not find window with class {self._window_class}')
+            logging.warning(f'Could not find window with class {self._window_class_pattern} and name {self._window_name_pattern}')
             return
 
         if self._only_first:
@@ -41,6 +47,6 @@ class WindowInput:
             await asyncio.sleep(0.1)
             if activated:
                 self._keyboard.emit_combo(self._input, True)
-                logging.info(f'Sent {self._input} to {window.wm_name} ({window.wm_class})')
+                logging.debug(f'Sent {self._input} to {window.wm_name} ({window.wm_class})')
             else:
                 logging.warning(f'Could not activate {window.wm_name} ({window.wm_class}) within {timeout}s')
