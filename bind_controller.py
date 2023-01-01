@@ -29,7 +29,7 @@ async def refresh_sink_inputs(knobs: List[PulseSinkInput], pulse_client: PulseAs
     input_list = await pulse_client.sink_input_list()
 
     for knob in knobs:
-        logging.info(f'Refresh {knob}')
+        logging.debug(f'Refresh {knob}')
         knob.refresh_sinks(input_list)
 
 
