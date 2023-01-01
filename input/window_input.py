@@ -19,8 +19,8 @@ class WindowInput:
 
     async def send(self):
         def is_target_window(w: Window):
-            return self._window_class_pattern is not None and self._window_class_pattern.search(w.wm_class) and \
-                self._window_name_pattern is not None and self._window_name_pattern.search(w.wm_name)
+            return (self._window_class_pattern is None or self._window_class_pattern.search(w.wm_class)) and \
+                (self._window_name_pattern is None or self._window_name_pattern.search(w.wm_name))
 
         target_windows = list(filter(is_target_window, Window.list()))
 
