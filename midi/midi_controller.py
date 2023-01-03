@@ -61,6 +61,7 @@ class MidiController:
 
     async def _dispatch(self, msg: mido.Message):
         bindings = []
+
         if msg.type == MidiController.NOTE_ON:
             bindings = self._note_on_bindings[msg.note]
         elif msg.is_cc():
