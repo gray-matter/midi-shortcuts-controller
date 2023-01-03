@@ -1,7 +1,13 @@
 python-uinput
 attrs
 wmctrl
+
 pulsectl
 pulsectl_asyncio
+
 mido
 python-rtmidi
+
+sounddevice
+soundfile
+numpy

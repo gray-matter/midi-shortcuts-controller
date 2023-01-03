@@ -1,8 +1,9 @@
 import asyncio
 import logging
+import pathlib
 import re
 import sys
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 import pulsectl_asyncio
 import uinput
@@ -14,6 +15,7 @@ from input import WindowInput
 from input.pulse_sink_input import PulseSinkInput
 from input.pulse_sinks import PulseSinks
 from midi.MidiController import MidiController
+from sound.sound_player import SoundPlayer
 
 
 def bootstrap_logging():
@@ -22,6 +24,10 @@ def bootstrap_logging():
     console.setFormatter(formatter)
     logging.getLogger().addHandler(console)
     logging.getLogger().setLevel(logging.INFO)
+
+
+async def asyncify(callback: Callable):
+    callback()
 
 
 async def refresh_sink_inputs(knobs: List[PulseSinkInput], pulse_client: PulseAsync):
@@ -67,6 +73,9 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
                                    [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
+    drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
+    cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
+
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
 
@@ -74,6 +83,9 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_note_on(2, lambda msg: wi_2.send())
     ctrl.bind_note_on(3, lambda msg: wi_3.send())
     ctrl.bind_note_on(4, lambda msg: wi_4.send())
+
+    ctrl.bind_note_on(5, lambda msg: asyncify(drum_roll.toggle))
+    ctrl.bind_note_on(6, lambda msg: asyncify(cymbals.play))
 
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
     ctrl.bind_note_on(22, lambda msg: bi.focus())
@@ -87,6 +99,7 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
 
     ctrl.bind_control_change(15, lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
     ctrl.bind_control_change(16, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
+    ctrl.bind_control_change(17, lambda msg: sink_inputs['chrome'].set_volume(msg.value / 127.))
 
     await ctrl.receive()
 
@@ -96,6 +109,7 @@ async def main():
 
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
         sink_inputs = {"spotify": PulseSinkInput("spotify", None, pulse_client),
+                       "chrome": PulseSinkInput("Google Chrome", None, pulse_client),
                        "firefox-callback": PulseSinkInput("Firefox", "AudioCallbackDriver", pulse_client)}
         sinks = PulseSinks(pulse_client)
 
