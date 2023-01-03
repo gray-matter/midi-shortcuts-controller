@@ -16,15 +16,18 @@ class BrowserTabFocus:
         browser_id = self._find_browser()
         if browser_id is None:
             logging.warning(f'Could not find browser matching {self._browser_regex}')
-            return
+            return False
 
         tab_id = self._find_tab(browser_id)
         if tab_id is None:
             logging.warning(f'Could not find tab matching {self._tab_regex}')
-            return
+            return False
 
         if self._focus_tab(tab_id):
-            logging.info(f'Focused {tab_id}')
+            logging.debug(f'Focused {tab_id}')
+            return True
+
+        return False
 
     @staticmethod
     def _list_bt_objects(command: List[str], line_matcher: re) -> Optional[Dict[str, str]]:

@@ -12,6 +12,7 @@ from pulsectl_asyncio import PulseAsync
 
 from browser.browser_tab_focus import BrowserTabFocus
 from input import WindowInput
+from input.browser_input import BrowserInput
 from input.pulse_sink_input import PulseSinkInput
 from input.pulse_sinks import PulseSinks
 from midi.midi_controller import MidiController
@@ -68,7 +69,9 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     wis_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
     wis_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
 
-    bi = BrowserTabFocus(re.compile('firefox'), re.compile('PulseAudio.*'))
+    spatialchat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('Criteo-Infra')),
+                                    WindowInput(re.compile('Navigator\\.firefox'), re.compile('Criteo-Infra'),
+                                                [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
 
     zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
                                    [uinput.KEY_LEFTALT, uinput.KEY_Q])
@@ -88,7 +91,7 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_note_on(6, lambda msg: asyncify(cymbals.play))
 
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
-    ctrl.bind_note_on(22, lambda msg: bi.focus())
+    ctrl.bind_note_on(22, lambda msg: spatialchat_mute.send())
 
     ctrl.bind_control_change(1, lambda msg: wis_1.send())
     ctrl.bind_control_change(2, lambda msg: wis_2.send())
