@@ -14,7 +14,7 @@ from browser.browser_tab_focus import BrowserTabFocus
 from input import WindowInput
 from input.pulse_sink_input import PulseSinkInput
 from input.pulse_sinks import PulseSinks
-from midi.MidiController import MidiController
+from midi.midi_controller import MidiController
 from sound.sound_player import SoundPlayer
 
 
