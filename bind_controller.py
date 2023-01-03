@@ -59,51 +59,56 @@ async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkI
 
 
 async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks):
-    wi_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_1])
-    wi_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_2])
-    wi_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_3])
-    wi_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_4])
+    ctrl = MidiController(re.compile('LPD8'))
+    ctrl.connect()
 
-    wis_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
-    wis_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
-    wis_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
-    wis_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
+    # Low-cost DJ mode
+    cue_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_1])
+    cue_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_2])
+    cue_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_3])
+    cue_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_4])
 
-    spatialchat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('Criteo-Infra')),
-                                    WindowInput(re.compile('Navigator\\.firefox'), re.compile('Criteo-Infra'),
-                                                [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
+    rm_cue_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
+    rm_cue_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
+    rm_cue_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
+    rm_cue_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
 
-    zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
-                                   [uinput.KEY_LEFTALT, uinput.KEY_Q])
+    ctrl.bind_note_on(1, lambda msg: cue_1.send())
+    ctrl.bind_note_on(2, lambda msg: cue_2.send())
+    ctrl.bind_note_on(3, lambda msg: cue_3.send())
+    ctrl.bind_note_on(4, lambda msg: cue_4.send())
+
+    ctrl.bind_control_change(1, lambda msg: rm_cue_1.send())
+    ctrl.bind_control_change(2, lambda msg: rm_cue_2.send())
+    ctrl.bind_control_change(3, lambda msg: rm_cue_3.send())
+    ctrl.bind_control_change(4, lambda msg: rm_cue_4.send())
 
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
     cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
 
-    ctrl = MidiController(re.compile('LPD8'))
-    ctrl.connect()
-
-    ctrl.bind_note_on(1, lambda msg: wi_1.send())
-    ctrl.bind_note_on(2, lambda msg: wi_2.send())
-    ctrl.bind_note_on(3, lambda msg: wi_3.send())
-    ctrl.bind_note_on(4, lambda msg: wi_4.send())
-
     ctrl.bind_note_on(5, lambda msg: asyncify(drum_roll.toggle))
     ctrl.bind_note_on(6, lambda msg: asyncify(cymbals.play))
 
+    # Work mode
+    spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('.*SpatialChat')),
+                                     WindowInput(re.compile('Navigator\\.firefox'), re.compile('.*SpatialChat'),
+                                                 [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
+
+    zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
+                                   [uinput.KEY_LEFTALT, uinput.KEY_Q])
+
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
-    ctrl.bind_note_on(22, lambda msg: spatialchat_mute.send())
+    ctrl.bind_note_on(22, lambda msg: spatial_chat_mute.send())
 
-    ctrl.bind_control_change(1, lambda msg: wis_1.send())
-    ctrl.bind_control_change(2, lambda msg: wis_2.send())
-    ctrl.bind_control_change(3, lambda msg: wis_3.send())
-    ctrl.bind_control_change(4, lambda msg: wis_4.send())
+    ctrl.bind_control_change(36, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
+    ctrl.bind_control_change(37, lambda msg: sink_inputs['chrome'].set_volume(msg.value / 127.))
 
+    # Common
     for cc_id in [11, 31, 51, 71]:
         ctrl.bind_control_change(cc_id, lambda msg: sinks.set_volume(msg.value / 127.))
 
-    ctrl.bind_control_change(15, lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
-    ctrl.bind_control_change(16, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
-    ctrl.bind_control_change(17, lambda msg: sink_inputs['chrome'].set_volume(msg.value / 127.))
+    for cc_id in [15, 35]:
+        ctrl.bind_control_change(cc_id, lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
 
     await ctrl.receive()
 
