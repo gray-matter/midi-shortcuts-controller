@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 from collections import defaultdict
-from typing import Optional, List, Callable, Awaitable
+from typing import Optional, List, Callable, Awaitable, Coroutine
 
 import mido
 
@@ -33,10 +33,10 @@ class MidiController:
         return self._inport and self._outport
 
     # TODO: Enums
-    def bind_note_on(self, note: int, callback: Awaitable[None]):
+    def bind_note_on(self, note: int, callback: Callable[[mido.Message], Coroutine]):
         self._note_on_bindings[note].append(callback)
 
-    def bind_control_change(self, control: int, callback: Awaitable[None]):
+    def bind_control_change(self, control: int, callback: Callable[[mido.Message], Coroutine]):
         self._controls_bindings[control].append(callback)
 
     async def receive(self):
