@@ -98,7 +98,8 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_control_change(3, lambda msg: wis_3.send())
     ctrl.bind_control_change(4, lambda msg: wis_4.send())
 
-    ctrl.bind_control_change(11, lambda msg: sinks.set_volume(msg.value / 127.))
+    for cc_id in [11, 31, 51, 71]:
+        ctrl.bind_control_change(cc_id, lambda msg: sinks.set_volume(msg.value / 127.))
 
     ctrl.bind_control_change(15, lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
     ctrl.bind_control_change(16, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
