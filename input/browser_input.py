@@ -1,6 +1,6 @@
 import logging
 
-from browser.browser_tab_focus import BrowserTabFocus
+from focus.browser_tab_focus import BrowserTabFocus
 from input import WindowInput
 
 

@@ -10,7 +10,8 @@ import uinput
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
-from browser.browser_tab_focus import BrowserTabFocus
+from focus.browser_tab_focus import BrowserTabFocus
+from focus.window_focus import WindowFocus
 from input import WindowInput
 from input.browser_input import BrowserInput
 from input.pulse_sink_input import PulseSinkInput
@@ -63,15 +64,15 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.connect()
 
     # Low-cost DJ mode
-    cue_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_1])
-    cue_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_2])
-    cue_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_3])
-    cue_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_4])
+    cue_1 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_1])
+    cue_2 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_2])
+    cue_3 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_3])
+    cue_4 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_4])
 
-    rm_cue_1 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
-    rm_cue_2 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
-    rm_cue_3 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
-    rm_cue_4 = WindowInput(re.compile("spotify.Spotify"), None, [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
+    rm_cue_1 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
+    rm_cue_2 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
+    rm_cue_3 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
+    rm_cue_4 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
 
     ctrl.bind_note_on(1, lambda msg: cue_1.send())
     ctrl.bind_note_on(2, lambda msg: cue_2.send())
@@ -91,10 +92,11 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
 
     # Work mode
     spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('.*SpatialChat')),
-                                     WindowInput(re.compile('Navigator\\.firefox'), re.compile('.*SpatialChat'),
+                                     WindowInput(WindowFocus(re.compile('Navigator\\.firefox'),
+                                                             re.compile('.*SpatialChat')),
                                                  [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
 
-    zoom_toggle_mute = WindowInput(re.compile("zoom"), re.compile("Zoom Meeting"),
+    zoom_toggle_mute = WindowInput(WindowFocus(re.compile("zoom"), re.compile("Zoom Meeting")),
                                    [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
