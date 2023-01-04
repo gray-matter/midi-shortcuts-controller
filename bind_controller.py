@@ -94,10 +94,10 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('.*SpatialChat')),
                                      WindowInput(WindowFocus(re.compile('Navigator\\.firefox'),
                                                              re.compile('.*SpatialChat')),
-                                                 [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
+                                                 [uinput.KEY_PAUSECD], [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
 
     zoom_toggle_mute = WindowInput(WindowFocus(re.compile("zoom"), re.compile("Zoom Meeting")),
-                                   [uinput.KEY_LEFTALT, uinput.KEY_Q])
+                                   [uinput.KEY_PAUSECD], [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
     ctrl.bind_note_on(22, lambda msg: spatial_chat_mute.send())

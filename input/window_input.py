@@ -1,16 +1,25 @@
-from typing import List
+from typing import List, Iterable
 
 import uinput
 import logging
 
 
 class WindowInput:
-    def __init__(self, focuser, virtual_input: List[int]):
+    def __init__(self, focuser, *inputs: List[int]):
         self._focuser = focuser
-        self._input = virtual_input
-        self._keyboard = uinput.Device(virtual_input)
+        self._inputs = inputs
+        self._keyboard = uinput.Device(WindowInput._unique_inputs(inputs))
 
     async def send(self):
         if await self._focuser.focus():
-            self._keyboard.emit_combo(self._input, True)
-            logging.debug(f'Sent {self._input}')
+            for virtual_input in self._inputs:
+                self._keyboard.emit_combo(virtual_input, True)
+                logging.debug(f'Sent {virtual_input}')
+
+    @classmethod
+    def _unique_inputs(cls: 'WindowInput', virtual_inputs: Iterable[List[int]]):
+        result = set()
+        for inputs in virtual_inputs:
+            result.update(inputs)
+
+        return result
