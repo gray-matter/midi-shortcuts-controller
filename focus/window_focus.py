@@ -7,8 +7,10 @@ from typing import Optional
 
 from wmctrl import Window
 
+from focus.focuser import Focuser
 
-class WindowFocus:
+
+class WindowFocuser(Focuser):
     def __init__(self, window_class_pattern: re.Pattern, window_name_pattern: Optional[re.Pattern],
                  time_to_focus: timedelta = timedelta(seconds=5)):
         self._window_class_pattern = window_class_pattern

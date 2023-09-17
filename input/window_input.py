@@ -3,10 +3,11 @@ from typing import List, Iterable
 import uinput
 import logging
 
+from focus.focuser import Focuser
+
 
 class WindowInput:
-    # TODO: Interface for all focusers
-    def __init__(self, focuser, *inputs: List[int]):
+    def __init__(self, focuser: Focuser, *inputs: List[int]):
         self._focuser = focuser
         self._inputs = inputs
         self._keyboard = uinput.Device(WindowInput._unique_inputs(inputs))

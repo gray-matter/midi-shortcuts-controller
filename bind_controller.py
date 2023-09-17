@@ -10,9 +10,9 @@ import uinput
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
-from focus.browser_tab_focus import BrowserTabFocus
-from focus.no_focus import NoFocus
-from focus.window_focus import WindowFocus
+from focus.browser_tab_focus import BrowserTabFocuser
+from focus.no_focus import NoFocuser
+from focus.window_focus import WindowFocuser
 from input import WindowInput
 from input.browser_input import BrowserInput
 from input.pulse_sink_input import PulseSinkInput
@@ -65,15 +65,15 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.connect()
 
     # Low-cost DJ mode
-    cue_1 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_1])
-    cue_2 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_2])
-    cue_3 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_3])
-    cue_4 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_4])
+    cue_1 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_1])
+    cue_2 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_2])
+    cue_3 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_3])
+    cue_4 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_4])
 
-    rm_cue_1 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
-    rm_cue_2 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
-    rm_cue_3 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
-    rm_cue_4 = WindowInput(WindowFocus(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
+    rm_cue_1 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_1])
+    rm_cue_2 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_2])
+    rm_cue_3 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_3])
+    rm_cue_4 = WindowInput(WindowFocuser(re.compile("spotify.Spotify"), None), [uinput.KEY_LEFTSHIFT, uinput.KEY_4])
 
     ctrl.bind_note_on(1, lambda msg: cue_1.send())
     ctrl.bind_note_on(2, lambda msg: cue_2.send())
@@ -92,19 +92,19 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_note_on(7, lambda msg: asyncify(cymbals.play))
 
     # Work mode
-    spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('Criteo SpatialChat')),
-                                     WindowInput(WindowFocus(re.compile('Navigator\\.firefox'),
-                                                             re.compile('.*SpatialChat')),
+    spatial_chat_mute = BrowserInput(BrowserTabFocuser(re.compile('firefox'), re.compile('Criteo SpatialChat')),
+                                     WindowInput(WindowFocuser(re.compile('Navigator\\.firefox'),
+                                                               re.compile('.*SpatialChat')),
                                                  [uinput.KEY_PAUSECD], [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
 
-    zoom_toggle_mute = WindowInput(WindowFocus(re.compile("zoom"), re.compile("Zoom Meeting")),
+    zoom_toggle_mute = WindowInput(WindowFocuser(re.compile("zoom"), re.compile("Zoom Meeting")),
                                    [uinput.KEY_PAUSECD], [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
     ctrl.bind_note_on(22, lambda msg: spatial_chat_mute.send())
 
-    media_next = WindowInput(NoFocus(), [uinput.KEY_NEXTSONG])
-    media_previous = WindowInput(NoFocus(), [uinput.KEY_PREVIOUSSONG])
+    media_next = WindowInput(NoFocuser(), [uinput.KEY_NEXTSONG])
+    media_previous = WindowInput(NoFocuser(), [uinput.KEY_PREVIOUSSONG])
 
     ctrl.bind_note_on(26, lambda msg: media_previous.send())
     ctrl.bind_note_on(27, lambda msg: media_next.send())
@@ -115,7 +115,7 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_control_change(38, lambda msg: sink_inputs['zoom'].set_volume(msg.value / 127.))
 
     # Common
-    play_pause = WindowInput(NoFocus(), [uinput.KEY_PLAYPAUSE])
+    play_pause = WindowInput(NoFocuser(), [uinput.KEY_PLAYPAUSE])
 
     for note_id in [5, 25, 45, 65]:
         ctrl.bind_note_on(note_id, lambda msg: play_pause.send())
@@ -134,7 +134,6 @@ async def main():
 
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
         sink_inputs = {"spotify": PulseSinkInput(re.compile("spotify"), None, pulse_client),
-                       # TODO: Regex instead of exact match
                        "chrome": PulseSinkInput(re.compile("Chrom(e|ium)"), None, pulse_client),
                        "firefox-callback": PulseSinkInput(re.compile("Firefox"), "AudioCallbackDriver", pulse_client),
                        "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), "playStream", pulse_client)}

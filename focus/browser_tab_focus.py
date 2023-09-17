@@ -3,8 +3,10 @@ import re
 import subprocess
 from typing import Optional, Dict, List
 
+from focus.focuser import Focuser
 
-class BrowserTabFocus:
+
+class BrowserTabFocuser(Focuser):
     def __init__(self, browser_regex: re.Pattern, tab_regex: re.Pattern):
         self._browser_regex = browser_regex
         self._tab_regex = tab_regex
@@ -45,21 +47,21 @@ class BrowserTabFocus:
 
     @staticmethod
     def _list_browsers() -> Optional[Dict[str, str]]:
-        return BrowserTabFocus._list_bt_objects(["bt", "clients"], re.compile('^([^.]+)\\..*\\s+(\\S+)$'))
+        return BrowserTabFocuser._list_bt_objects(["bt", "clients"], re.compile('^([^.]+)\\..*\\s+(\\S+)$'))
 
     @staticmethod
     def _list_tabs(browser_id: str) -> Optional[Dict[str, str]]:
-        return BrowserTabFocus._list_bt_objects(["bt", "list"], re.compile(f'(^{browser_id}\\.[^\t]+)\t([^\t]+)'))
+        return BrowserTabFocuser._list_bt_objects(["bt", "list"], re.compile(f'(^{browser_id}\\.[^\t]+)\t([^\t]+)'))
 
     def _find_browser(self) -> Optional[str]:
-        for browser_id, browser_name in BrowserTabFocus._list_browsers().items():
+        for browser_id, browser_name in BrowserTabFocuser._list_browsers().items():
             if self._browser_regex.match(browser_name):
                 return browser_id
 
         return None
 
     def _find_tab(self, browser_id: str) -> Optional[str]:
-        for tab_id, tab_name in BrowserTabFocus._list_tabs(browser_id).items():
+        for tab_id, tab_name in BrowserTabFocuser._list_tabs(browser_id).items():
             if self._tab_regex.match(tab_name):
                 return tab_id
 
