@@ -133,10 +133,11 @@ async def main():
     bootstrap_logging()
 
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
-        sink_inputs = {"spotify": PulseSinkInput("spotify", None, pulse_client),
-                       "chrome": PulseSinkInput("Google Chrome", None, pulse_client),
-                       "firefox-callback": PulseSinkInput("Firefox", "AudioCallbackDriver", pulse_client),
-                       "zoom": PulseSinkInput("ZOOM VoiceEngine", "playStream", pulse_client)}
+        sink_inputs = {"spotify": PulseSinkInput(re.compile("spotify"), None, pulse_client),
+                       # TODO: Regex instead of exact match
+                       "chrome": PulseSinkInput(re.compile("Chrom(e|ium)"), None, pulse_client),
+                       "firefox-callback": PulseSinkInput(re.compile("Firefox"), "AudioCallbackDriver", pulse_client),
+                       "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), "playStream", pulse_client)}
         sinks = PulseSinks(pulse_client)
 
         pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks))

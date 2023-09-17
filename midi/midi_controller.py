@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 from collections import defaultdict
-from typing import Optional, List, Callable, Awaitable, Coroutine
+from typing import Optional, List, Callable, Coroutine
 
 import mido
 
@@ -21,6 +21,7 @@ class MidiController:
         self._note_on_bindings = defaultdict(list)
 
     def connect(self) -> bool:
+        # TODO: Reconnect https://stackoverflow.com/questions/27996241/pygame-re-initialize-usb-midi-device-on-reconnect
         inport_name = self._find(mido.get_input_names())
         outport_name = self._find(mido.get_output_names())
 
@@ -32,7 +33,7 @@ class MidiController:
 
         return self._inport and self._outport
 
-    # TODO: Enums
+    # TODO: Programs mapping
     def bind_note_on(self, note: int, callback: Callable[[mido.Message], Coroutine]):
         self._note_on_bindings[note].append(callback)
 

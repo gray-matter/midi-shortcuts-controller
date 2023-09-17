@@ -5,6 +5,7 @@ import logging
 
 
 class WindowInput:
+    # TODO: Interface for all focusers
     def __init__(self, focuser, *inputs: List[int]):
         self._focuser = focuser
         self._inputs = inputs
