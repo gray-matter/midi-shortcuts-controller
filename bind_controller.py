@@ -11,6 +11,7 @@ from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
 from focus.browser_tab_focus import BrowserTabFocus
+from focus.no_focus import NoFocus
 from focus.window_focus import WindowFocus
 from input import WindowInput
 from input.browser_input import BrowserInput
@@ -87,11 +88,11 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
     cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
 
-    ctrl.bind_note_on(5, lambda msg: asyncify(drum_roll.toggle))
-    ctrl.bind_note_on(6, lambda msg: asyncify(cymbals.play))
+    ctrl.bind_note_on(6, lambda msg: asyncify(drum_roll.toggle))
+    ctrl.bind_note_on(7, lambda msg: asyncify(cymbals.play))
 
     # Work mode
-    spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('.*SpatialChat')),
+    spatial_chat_mute = BrowserInput(BrowserTabFocus(re.compile('firefox'), re.compile('Criteo SpatialChat')),
                                      WindowInput(WindowFocus(re.compile('Navigator\\.firefox'),
                                                              re.compile('.*SpatialChat')),
                                                  [uinput.KEY_PAUSECD], [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
@@ -102,10 +103,23 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl.bind_note_on(21, lambda msg: zoom_toggle_mute.send())
     ctrl.bind_note_on(22, lambda msg: spatial_chat_mute.send())
 
+    media_next = WindowInput(NoFocus(), [uinput.KEY_NEXTSONG])
+    media_previous = WindowInput(NoFocus(), [uinput.KEY_PREVIOUSSONG])
+
+    ctrl.bind_note_on(26, lambda msg: media_previous.send())
+    ctrl.bind_note_on(27, lambda msg: media_next.send())
+    ctrl.bind_note_on(27, lambda msg: media_next.send())
+
     ctrl.bind_control_change(36, lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
     ctrl.bind_control_change(37, lambda msg: sink_inputs['chrome'].set_volume(msg.value / 127.))
+    ctrl.bind_control_change(38, lambda msg: sink_inputs['zoom'].set_volume(msg.value / 127.))
 
     # Common
+    play_pause = WindowInput(NoFocus(), [uinput.KEY_PLAYPAUSE])
+
+    for note_id in [5, 25, 45, 65]:
+        ctrl.bind_note_on(note_id, lambda msg: play_pause.send())
+
     for cc_id in [11, 31, 51, 71]:
         ctrl.bind_control_change(cc_id, lambda msg: sinks.set_volume(msg.value / 127.))
 
@@ -121,7 +135,8 @@ async def main():
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
         sink_inputs = {"spotify": PulseSinkInput("spotify", None, pulse_client),
                        "chrome": PulseSinkInput("Google Chrome", None, pulse_client),
-                       "firefox-callback": PulseSinkInput("Firefox", "AudioCallbackDriver", pulse_client)}
+                       "firefox-callback": PulseSinkInput("Firefox", "AudioCallbackDriver", pulse_client),
+                       "zoom": PulseSinkInput("ZOOM VoiceEngine", "playStream", pulse_client)}
         sinks = PulseSinks(pulse_client)
 
         pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks))
