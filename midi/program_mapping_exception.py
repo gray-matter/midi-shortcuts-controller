@@ -1,0 +1,2 @@
+class ProgramMappingException(Exception):
+    pass
