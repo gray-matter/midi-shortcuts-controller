@@ -16,7 +16,7 @@ class Program:
         if pad > len(self._pads) or pad < 1:
             raise ProgramMappingException(f'Pad {pad} is not mapped')
 
-        return self._pads[pad]
+        return self._pads[pad - 1]
 
     def get_knob(self, knob: int):
         """
@@ -26,4 +26,4 @@ class Program:
         if knob > len(self._knobs) or knob < 1:
             raise ProgramMappingException(f'Knob {knob} is not mapped')
 
-        return self._knobs[knob]
+        return self._knobs[knob - 1]

@@ -27,7 +27,7 @@ class WindowFocuser(Focuser):
         target_windows = list(filter(is_target_window, Window.list()))
 
         if len(target_windows) == 0:
-            logging.warning(f'Could not find window with {search_description}')
+            logging.warning(f'Could not find window with {search_description.pattern}')
             return False
 
         if len(target_windows) > 1:

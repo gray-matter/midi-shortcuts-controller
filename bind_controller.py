@@ -151,8 +151,9 @@ async def main():
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
         sink_inputs = {"spotify": PulseSinkInput(re.compile("spotify"), None, pulse_client),
                        "chrome": PulseSinkInput(re.compile("Chrom(e|ium)"), None, pulse_client),
-                       "firefox-callback": PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"), pulse_client),
-                       "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), "playStream", pulse_client)}
+                       "firefox-callback": PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"),
+                                                          pulse_client),
+                       "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), re.compile("playStream"), pulse_client)}
         sinks = PulseSinks(pulse_client)
 
         pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks))
