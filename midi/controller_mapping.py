@@ -5,9 +5,8 @@ from midi.program_mapping_exception import ProgramMappingException
 
 
 class ControllerMapping:
-    def __init__(self):
-        # FIXME: Take # of programs as argument
-        self._programs: List[Optional[Program]] = [None] * 4
+    def __init__(self, nb_programs: int):
+        self._programs: List[Optional[Program]] = [None] * nb_programs
 
     def map(self, program_id: int, program: Program):
         if program_id < 1 or program_id > len(self._programs):

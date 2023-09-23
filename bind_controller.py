@@ -133,7 +133,7 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
 
-    mapping = ControllerMapping()
+    mapping = ControllerMapping(4)
     mapping.map(1, Program(list(range(1, 9)), list(range(11, 19))))
     mapping.map(2, Program(list(range(21, 29)), list(range(31, 39))))
     mapping.map(3, Program(list(range(41, 49)), list(range(51, 59))))
