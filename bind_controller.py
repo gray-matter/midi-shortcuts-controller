@@ -17,6 +17,8 @@ from input import WindowInput
 from input.browser_input import BrowserInput
 from input.pulse_sink_input import PulseSinkInput
 from input.pulse_sinks import PulseSinks
+from input.pulse_sinks_db import PulseSinksDb
+from input.pulse_sinks_view import PulseSinksView
 from midi.controller_mapping import ControllerMapping
 from midi.midi_controller import MidiController
 from midi.program import Program
@@ -43,12 +45,12 @@ async def refresh_sink_inputs(knobs: List[PulseSinkInput], pulse_client: PulseAs
         knob.refresh_sinks(input_list)
 
 
-async def refresh_sinks(sinks: PulseSinks, pulse_client: PulseAsync):
-    sinks.refresh(await pulse_client.sink_list())
+async def refresh_sinks(sinks_db: PulseSinksDb, pulse_client: PulseAsync):
+    sinks_db.refresh(await pulse_client.sink_list())
 
 
 async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkInput],
-                     sinks: PulseSinks):
+                     sinks: PulseSinksDb):
     await refresh_sink_inputs(list(sink_inputs.values()), pulse_client)
     await refresh_sinks(sinks, pulse_client)
 
@@ -62,7 +64,8 @@ async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkI
             await refresh_sinks(sinks, pulse_client)
 
 
-def bind_common(ctrl: MidiController, program: Program, sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks) -> None:
+def bind_common(ctrl: MidiController, program: Program, sink_inputs: Dict[str, PulseSinkInput],
+                sinks: PulseSinks) -> None:
     play_pause = WindowInput(NoFocuser(), [uinput.KEY_PLAYPAUSE])
     ctrl.bind_note_on(program.get_pad(5), lambda msg: play_pause.send())
 
@@ -148,16 +151,19 @@ async def inputs_loop(sink_inputs: Dict[str, PulseSinkInput], sinks: PulseSinks)
 async def main():
     bootstrap_logging()
 
+    pulse_client: PulseAsync
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
         sink_inputs = {"spotify": PulseSinkInput(re.compile("spotify"), None, pulse_client),
                        "chrome": PulseSinkInput(re.compile("Chrom(e|ium)"), None, pulse_client),
                        "firefox-callback": PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"),
                                                           pulse_client),
                        "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), re.compile("playStream"), pulse_client)}
-        sinks = PulseSinks(pulse_client)
 
-        pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks))
-        inputs_task = asyncio.create_task(inputs_loop(sink_inputs, sinks))
+        sinks_db = PulseSinksDb()
+        running_sinks = PulseSinks(PulseSinksView(lambda sink: sink.state == 'running', sinks_db), pulse_client)
+
+        pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks_db))
+        inputs_task = asyncio.create_task(inputs_loop(sink_inputs, running_sinks))
 
         await pulse_task
         await inputs_task
