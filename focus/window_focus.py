@@ -18,7 +18,9 @@ class WindowFocuser(Focuser):
         self._time_to_focus = time_to_focus
 
     async def focus(self) -> bool:
-        search_description = f'class {self._window_class_pattern} and name {self._window_name_pattern}'
+        search_description = f'class {self._window_class_pattern.pattern}'
+        if self._window_name_pattern is not None:
+            search_description += ' and name {self._window_name_pattern.pattern}'
 
         def is_target_window(w: Window):
             return (self._window_class_pattern is None or self._window_class_pattern.search(w.wm_class)) and \
@@ -27,7 +29,7 @@ class WindowFocuser(Focuser):
         target_windows = list(filter(is_target_window, Window.list()))
 
         if len(target_windows) == 0:
-            logging.warning(f'Could not find window with {search_description.pattern}')
+            logging.warning(f'Could not find window with {search_description}')
             return False
 
         if len(target_windows) > 1:
