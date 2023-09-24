@@ -43,6 +43,7 @@ class MidiController:
     async def receive(self):
         while True:
             # FIXME: Discard messages when read
+            # FIXME: Handle None case
             for msg in self._inport.iter_pending():
                 await self._dispatch(msg)
             await asyncio.sleep(0.1)
@@ -63,6 +64,7 @@ class MidiController:
 
     async def _dispatch(self, msg: mido.Message):
         bindings = []
+        logging.debug(f'Received MIDI message {msg}')
 
         if msg.type == MidiController.NOTE_ON:
             bindings = self._note_on_bindings[msg.note]

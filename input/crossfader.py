@@ -14,6 +14,8 @@ class CrossFader:
 
     async def update(self, msg: Message) -> None:
         value = msg.value
+        logging.debug(f'Crossfader between {self._left_sink} and {self._right_sink}: {value}')
+
         mid_value = 127 / 2
         left_value = max((value - mid_value) * 2 / 100, 0)
         right_value = max((mid_value - value) * 2 / 100, 0)

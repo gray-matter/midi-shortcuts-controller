@@ -17,6 +17,7 @@ from input import WindowInput
 from input.browser_input import BrowserInput
 from input.crossfader import CrossFader
 from input.pulse_sink_input import PulseSinkInput
+from input.pulse_sink_inputs_db import PulseSinkInputsDb
 from input.pulse_sinks import PulseSinks
 from input.pulse_sinks_db import PulseSinksDb
 from input.pulse_sinks_view import PulseSinksView
@@ -38,41 +39,35 @@ async def asyncify(callback: Callable):
     callback()
 
 
-async def refresh_sink_inputs(knobs: List[PulseSinkInput], pulse_client: PulseAsync):
-    input_list = await pulse_client.sink_input_list()
-
-    for knob in knobs:
-        logging.debug(f'Refresh {knob}')
-        knob.refresh_sinks(input_list)
+async def refresh_sink_inputs(sink_inputs_db: PulseSinkInputsDb, pulse_client: PulseAsync):
+    sink_inputs_db.refresh(await pulse_client.sink_input_list())
 
 
 async def refresh_sinks(sinks_db: PulseSinksDb, pulse_client: PulseAsync):
     sinks_db.refresh(await pulse_client.sink_list())
 
 
-async def pulse_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkInput],
-                     sinks: PulseSinksDb):
-    await refresh_sink_inputs(list(sink_inputs.values()), pulse_client)
-    await refresh_sinks(sinks, pulse_client)
+async def pulse_loop(pulse_client: PulseAsync, sinks_db: PulseSinksDb, sink_inputs_db: PulseSinkInputsDb):
+    await refresh_sink_inputs(sink_inputs_db, pulse_client)
+    await refresh_sinks(sinks_db, pulse_client)
 
     async for ev in pulse_client.subscribe_events('all'):
         if ev.facility in [PulseEventFacilityEnum.sink_input] and \
                 ev.t in [PulseEventTypeEnum.new, PulseEventTypeEnum.remove]:
-            await refresh_sink_inputs(list(sink_inputs.values()), pulse_client)
+            await refresh_sink_inputs(sink_inputs_db, pulse_client)
 
         if ev.facility in [PulseEventFacilityEnum.sink] and \
                 ev.t in [PulseEventTypeEnum.new, PulseEventTypeEnum.remove]:
-            await refresh_sinks(sinks, pulse_client)
+            await refresh_sinks(sinks_db, pulse_client)
 
 
-def bind_common(ctrl: MidiController, program: Program, sink_inputs: Dict[str, PulseSinkInput]) -> None:
+def bind_common(ctrl: MidiController, program: Program) -> None:
     play_pause = WindowInput(NoFocuser(), [uinput.KEY_PLAYPAUSE])
     ctrl.bind_note_on(program.get_pad(5), lambda msg: play_pause.send())
-    ctrl.bind_control_change(program.get_knob(5), lambda msg: sink_inputs['spotify'].set_volume(msg.value / 127.))
 
 
-def bind_dj_mode(ctrl: MidiController, program: Program, sink_inputs: Dict[str, PulseSinkInput],
-                 sinks_db: PulseSinksDb, pulse_client: PulseAsync) -> None:
+def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb, sink_inputs_db: PulseSinkInputsDb,
+                 pulse_client: PulseAsync) -> None:
     spotify_focuser = WindowFocuser(re.compile("spotify.Spotify"), None)
 
     cue_1 = WindowInput(spotify_focuser, [uinput.KEY_1])
@@ -95,6 +90,7 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sink_inputs: Dict[str, 
     ctrl.bind_control_change(program.get_pad(3), lambda msg: rm_cue_3.send())
     ctrl.bind_control_change(program.get_pad(4), lambda msg: rm_cue_4.send())
 
+    # FIXME: Ensure this is not too loud
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
     cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
 
@@ -106,15 +102,18 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sink_inputs: Dict[str, 
                                              'Sony BT headsets'), pulse_client)
     speaker_sink = PulseSinks(PulseSinksView(lambda sink: 'Speaker + Headphones' in sink.description,
                                              sinks_db, 'Speaker or jack attachment'), pulse_client)
-    crossfader = CrossFader(sink_inputs['spotify'], headset_sink, speaker_sink)
+
+    spotify_sink_input = PulseSinkInput(re.compile("spotify"), None, sink_inputs_db, pulse_client)
+    crossfader = CrossFader(spotify_sink_input, headset_sink, speaker_sink)
 
     ctrl.bind_control_change(program.get_knob(1), crossfader.update)
+    ctrl.bind_control_change(program.get_knob(5), lambda msg: spotify_sink_input.set_volume(msg.value / 127.))
 
-    bind_common(ctrl, program, sink_inputs)
+    bind_common(ctrl, program)
 
 
-def bind_work_mode(ctrl: MidiController, program: Program, sink_inputs: Dict[str, PulseSinkInput],
-                   sinks_db: PulseSinksDb, pulse_client: PulseAsync) -> None:
+def bind_work_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
+                   sink_inputs_db: PulseSinkInputsDb, pulse_client: PulseAsync) -> None:
     spatial_chat_mute = BrowserInput(BrowserTabFocuser(re.compile('firefox'), re.compile('Criteo SpatialChat')),
                                      WindowInput(WindowFocuser(re.compile('Navigator\\.firefox'),
                                                                re.compile('.*SpatialChat')),
@@ -132,18 +131,28 @@ def bind_work_mode(ctrl: MidiController, program: Program, sink_inputs: Dict[str
     ctrl.bind_note_on(program.get_pad(6), lambda msg: media_previous.send())
     ctrl.bind_note_on(program.get_pad(7), lambda msg: media_next.send())
 
-    ctrl.bind_control_change(program.get_knob(6), lambda msg: sink_inputs['firefox-callback'].set_volume(msg.value / 127.))
-    ctrl.bind_control_change(program.get_knob(7), lambda msg: sink_inputs['chrome'].set_volume(msg.value / 127.))
-    ctrl.bind_control_change(program.get_knob(8), lambda msg: sink_inputs['zoom'].set_volume(msg.value / 127.))
+    firefox_sink_input = PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"), sink_inputs_db,
+                                        pulse_client)
+    ctrl.bind_control_change(program.get_knob(6), lambda msg: firefox_sink_input.set_volume(msg.value / 127.))
+
+    chrome_sink_input = PulseSinkInput(re.compile("Chrom(e|ium)"), None, sink_inputs_db, pulse_client)
+    ctrl.bind_control_change(program.get_knob(7), lambda msg: chrome_sink_input.set_volume(msg.value / 127.))
+
+    zoom_sink_input = PulseSinkInput(re.compile("ZOOM VoiceEngine"), re.compile("playStream"), sink_inputs_db,
+                                     pulse_client)
+    ctrl.bind_control_change(program.get_knob(8), lambda msg: zoom_sink_input.set_volume(msg.value / 127.))
 
     running_sinks = PulseSinks(PulseSinksView(lambda sink: sink.state == 'running', sinks_db,
                                               'All running sinks'), pulse_client)
     ctrl.bind_control_change(program.get_knob(1), lambda msg: running_sinks.set_volume(msg.value / 127.))
 
-    bind_common(ctrl, program, sink_inputs)
+    spotify_sink_input = PulseSinkInput(re.compile("spotify"), None, sink_inputs_db, pulse_client)
+    ctrl.bind_control_change(program.get_knob(5), lambda msg: spotify_sink_input.set_volume(msg.value / 127.))
+
+    bind_common(ctrl, program)
 
 
-async def inputs_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSinkInput], sinks_db: PulseSinksDb) -> None:
+async def inputs_loop(pulse_client: PulseAsync, sinks_db: PulseSinksDb, sink_inputs_db: PulseSinkInputsDb) -> None:
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
 
@@ -153,8 +162,8 @@ async def inputs_loop(pulse_client: PulseAsync, sink_inputs: Dict[str, PulseSink
     mapping.map(3, Program(list(range(41, 49)), list(range(51, 59))))
     mapping.map(4, Program(list(range(61, 69)), list(range(71, 79))))
 
-    bind_dj_mode(ctrl, mapping.get(1), sink_inputs, sinks_db, pulse_client)
-    bind_work_mode(ctrl, mapping.get(2), sink_inputs, sinks_db, pulse_client)
+    bind_dj_mode(ctrl, mapping.get(1), sinks_db, sink_inputs_db, pulse_client)
+    bind_work_mode(ctrl, mapping.get(2), sinks_db, sink_inputs_db, pulse_client)
 
     await ctrl.receive()
 
@@ -164,16 +173,11 @@ async def main():
 
     pulse_client: PulseAsync
     async with pulsectl_asyncio.PulseAsync('midi-shortcuts-controller') as pulse_client:
-        sink_inputs = {"spotify": PulseSinkInput(re.compile("spotify"), None, pulse_client),
-                       "chrome": PulseSinkInput(re.compile("Chrom(e|ium)"), None, pulse_client),
-                       "firefox-callback": PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"),
-                                                          pulse_client),
-                       "zoom": PulseSinkInput(re.compile("ZOOM VoiceEngine"), re.compile("playStream"), pulse_client)}
-
+        sink_inputs_db = PulseSinkInputsDb()
         sinks_db = PulseSinksDb()
 
-        pulse_task = asyncio.create_task(pulse_loop(pulse_client, sink_inputs, sinks_db))
-        inputs_task = asyncio.create_task(inputs_loop(pulse_client, sink_inputs, sinks_db))
+        pulse_task = asyncio.create_task(pulse_loop(pulse_client, sinks_db, sink_inputs_db))
+        inputs_task = asyncio.create_task(inputs_loop(pulse_client, sinks_db, sink_inputs_db))
 
         await pulse_task
         await inputs_task
