@@ -38,7 +38,7 @@ class MidiController:
         if outport_name:
             self._outport = mido.open_output(outport_name)
 
-        logging.debug(f'Connecting MIDI controller: in = {self._inport}, out ={self._outport}')
+        logging.debug(f'Connecting MIDI controller: in = {self._inport}, out = {self._outport}')
 
     def bind_note_on(self, note: int, callback: Callable[[mido.Message], Coroutine]):
         self._note_on_bindings[note].append(callback)

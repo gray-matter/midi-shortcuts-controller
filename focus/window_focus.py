@@ -48,3 +48,9 @@ class WindowFocuser(Focuser):
 
         logging.warning(f'Could not activate window with {search_description} within {timeout}s')
         return False
+
+    def __str__(self):
+        return f'Window name: {self._window_name_pattern}, window class: {self._window_class_pattern}'
+
+    def __repr__(self):
+        return f'WindowFocus({self})'

@@ -54,11 +54,10 @@ class PulseSinkInput:
         logging.debug(f'Moving sink inputs {sink_inputs} to sink {sink_index}')
 
         for sink_input in sink_inputs:
-            logging.debug(f'Moving sink input {sink_input.index} to sink {sink_index}')
             await self._pulse_client.sink_input_move(sink_input.index, sink_index)
 
     def __str__(self) -> str:
-        return f'App_name: {self._app_name_pattern}'
+        return f'App_name: {self._app_name_pattern}, media name: {self._media_name_pattern}'
 
     def __repr__(self) -> str:
         return f'PulseInput({self})'

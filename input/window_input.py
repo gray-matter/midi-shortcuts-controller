@@ -16,7 +16,7 @@ class WindowInput:
         if await self._focuser.focus():
             for virtual_input in self._inputs:
                 self._keyboard.emit_combo(virtual_input, True)
-                logging.debug(f'Sent {virtual_input}')
+                logging.debug(f'Sent keyboard combo {virtual_input} after focusing on {self._focuser}')
 
     @classmethod
     def _unique_inputs(cls: 'WindowInput', virtual_inputs: Iterable[List[int]]):

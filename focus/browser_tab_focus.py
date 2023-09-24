@@ -75,3 +75,9 @@ class BrowserTabFocuser(Focuser):
             return False
 
         return True
+
+    def __str__(self):
+        return f'Browser: {self._browser_regex}, tab: {self._tab_regex}'
+
+    def __repr__(self):
+        return f'BrowserTabFocus({self})'
