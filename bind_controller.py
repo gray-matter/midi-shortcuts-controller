@@ -163,7 +163,7 @@ def watch_usb_events(ctrl: MidiController):
     monitor = pyudev.Monitor.from_netlink(context)
     monitor.filter_by(subsystem='usb')
 
-    observer = pyudev.MonitorObserver(monitor, lambda _, __: ctrl.connect())
+    observer = pyudev.MonitorObserver(monitor, lambda evt, _: evt == 'bind' and ctrl.connect())
     observer.start()
 
 
