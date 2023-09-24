@@ -2,7 +2,7 @@ from typing import Callable, List
 
 from pulsectl import PulseSinkInfo
 
-from input.pulse_sinks_db import PulseSinksDb
+from sound.pulse_sinks_db import PulseSinksDb
 
 
 class PulseSinksView:

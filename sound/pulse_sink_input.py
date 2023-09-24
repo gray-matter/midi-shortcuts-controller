@@ -4,8 +4,8 @@ from typing import List, Optional
 from pulsectl import PulseVolumeInfo, PulseSinkInputInfo
 from pulsectl_asyncio import PulseAsync
 
-from input.pulse_sink_inputs_db import PulseSinkInputsDb
-from input.pulse_sinks import PulseSinks, SinksCountException
+from sound.pulse_sink_inputs_db import PulseSinkInputsDb
+from sound.pulse_sinks import PulseSinks, SinksCountException
 
 
 class PulseSinkInput:

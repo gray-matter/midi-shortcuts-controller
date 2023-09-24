@@ -3,7 +3,7 @@ import logging
 from pulsectl import PulseVolumeInfo
 from pulsectl_asyncio import PulseAsync
 
-from input.pulse_sinks_view import PulseSinksView
+from sound.pulse_sinks_view import PulseSinksView
 
 
 class SinksCountException(Exception):

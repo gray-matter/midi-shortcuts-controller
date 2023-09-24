@@ -2,8 +2,8 @@ import logging
 
 from mido import Message
 
-from input.pulse_sink_input import PulseSinkInput
-from input.pulse_sinks import PulseSinks
+from sound.pulse_sink_input import PulseSinkInput
+from sound.pulse_sinks import PulseSinks
 
 
 class CrossFader:
