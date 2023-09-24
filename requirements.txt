@@ -11,3 +11,6 @@ python-rtmidi
 sounddevice
 soundfile
 numpy
+
+pyudev
+PyGObject

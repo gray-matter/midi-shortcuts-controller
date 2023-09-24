@@ -20,10 +20,17 @@ class MidiController:
         self._name_regex = name_regex
         self._note_on_bindings = defaultdict(list)
 
-    def connect(self) -> bool:
-        # TODO: Reconnect https://stackoverflow.com/questions/27996241/pygame-re-initialize-usb-midi-device-on-reconnect
+    def connect(self) -> None:
         inport_name = self._find(mido.get_input_names())
         outport_name = self._find(mido.get_output_names())
+
+        if self._inport is not None:
+            self._inport.close()
+            self._inport = None
+
+        if self._outport is not None:
+            self._outport.close()
+            self._outport = None
 
         if inport_name:
             self._inport = mido.open_input(inport_name)
@@ -31,9 +38,8 @@ class MidiController:
         if outport_name:
             self._outport = mido.open_output(outport_name)
 
-        return self._inport and self._outport
+        logging.debug(f'Connecting MIDI controller: in = {self._inport}, out ={self._outport}')
 
-    # TODO: Programs mapping
     def bind_note_on(self, note: int, callback: Callable[[mido.Message], Coroutine]):
         self._note_on_bindings[note].append(callback)
 
@@ -43,10 +49,10 @@ class MidiController:
     async def receive(self):
         while True:
             # FIXME: Discard messages when read
-            # FIXME: Handle None case
-            for msg in self._inport.iter_pending():
-                await self._dispatch(msg)
-            await asyncio.sleep(0.1)
+            if self._inport:
+                for msg in self._inport.iter_pending():
+                    await self._dispatch(msg)
+                await asyncio.sleep(0.1)
 
     def _find(self, available: List[str]) -> Optional[str]:
         matching = [dev_name for dev_name in set(available) if self._name_regex.search(dev_name)]
@@ -64,13 +70,12 @@ class MidiController:
 
     async def _dispatch(self, msg: mido.Message):
         bindings = []
-        logging.debug(f'Received MIDI message {msg}')
 
         if msg.type == MidiController.NOTE_ON:
             bindings = self._note_on_bindings[msg.note]
         elif msg.is_cc():
             bindings = self._controls_bindings[msg.control]
 
-        logging.debug(f'Found {len(bindings)} bindings')
+        logging.debug(f'Received MIDI message {msg}, found {len(bindings)} bindings')
         for binding in bindings:
             await binding(msg)

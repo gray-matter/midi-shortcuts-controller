@@ -3,9 +3,10 @@ import logging
 import pathlib
 import re
 import sys
-from typing import List, Dict, Callable
+from typing import Callable
 
 import pulsectl_asyncio
+import pyudev
 import uinput
 from mido import Message
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
@@ -157,6 +158,15 @@ def bind_work_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksD
     bind_common(ctrl, program)
 
 
+def watch_usb_events(ctrl: MidiController):
+    context = pyudev.Context()
+    monitor = pyudev.Monitor.from_netlink(context)
+    monitor.filter_by(subsystem='usb')
+
+    observer = pyudev.MonitorObserver(monitor, lambda _, __: ctrl.connect())
+    observer.start()
+
+
 async def inputs_loop(pulse_client: PulseAsync, sinks_db: PulseSinksDb, sink_inputs_db: PulseSinkInputsDb) -> None:
     ctrl = MidiController(re.compile('LPD8'))
     ctrl.connect()
@@ -169,6 +179,8 @@ async def inputs_loop(pulse_client: PulseAsync, sinks_db: PulseSinksDb, sink_inp
 
     bind_dj_mode(ctrl, mapping.get(1), sinks_db, sink_inputs_db, pulse_client)
     bind_work_mode(ctrl, mapping.get(2), sinks_db, sink_inputs_db, pulse_client)
+
+    watch_usb_events(ctrl)
 
     await ctrl.receive()
 
