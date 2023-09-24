@@ -42,6 +42,7 @@ class MidiController:
 
     async def receive(self):
         while True:
+            # FIXME: Discard messages when read
             for msg in self._inport.iter_pending():
                 await self._dispatch(msg)
             await asyncio.sleep(0.1)
