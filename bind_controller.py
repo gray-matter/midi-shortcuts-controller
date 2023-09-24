@@ -7,6 +7,7 @@ from typing import List, Dict, Callable
 
 import pulsectl_asyncio
 import uinput
+from mido import Message
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
@@ -85,10 +86,14 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
     ctrl.bind_note_on(program.get_pad(3), lambda msg: cue_3.send())
     ctrl.bind_note_on(program.get_pad(4), lambda msg: cue_4.send())
 
-    ctrl.bind_control_change(program.get_pad(1), lambda msg: rm_cue_1.send())
-    ctrl.bind_control_change(program.get_pad(2), lambda msg: rm_cue_2.send())
-    ctrl.bind_control_change(program.get_pad(3), lambda msg: rm_cue_3.send())
-    ctrl.bind_control_change(program.get_pad(4), lambda msg: rm_cue_4.send())
+    async def send_if_not_0(msg: Message, window_input: WindowInput):
+        if msg.value > 0:
+            await window_input.send()
+
+    ctrl.bind_control_change(program.get_pad(1), lambda msg: send_if_not_0(msg, rm_cue_1))
+    ctrl.bind_control_change(program.get_pad(2), lambda msg: send_if_not_0(msg, rm_cue_2))
+    ctrl.bind_control_change(program.get_pad(3), lambda msg: send_if_not_0(msg, rm_cue_3))
+    ctrl.bind_control_change(program.get_pad(4), lambda msg: send_if_not_0(msg, rm_cue_4))
 
     # FIXME: Ensure this is not too loud
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
