@@ -12,20 +12,20 @@ from mido import Message
 from pulsectl import PulseEventFacilityEnum, PulseEventTypeEnum
 from pulsectl_asyncio import PulseAsync
 
+from controls.crossfader import CrossFader
 from focus.browser_tab_focus import BrowserTabFocuser
 from focus.no_focus import NoFocuser
 from focus.window_focus import WindowFocuser
 from input import WindowInput
 from input.browser_input import BrowserInput
-from controls.crossfader import CrossFader
+from midi.controller_mapping import ControllerMapping
+from midi.midi_controller import MidiController
+from midi.program import Program
 from sound.pulse_sink_input import PulseSinkInput
 from sound.pulse_sink_inputs_db import PulseSinkInputsDb
 from sound.pulse_sinks import PulseSinks
 from sound.pulse_sinks_db import PulseSinksDb
 from sound.pulse_sinks_view import PulseSinksView
-from midi.controller_mapping import ControllerMapping
-from midi.midi_controller import MidiController
-from midi.program import Program
 from sound.sound_player import SoundPlayer
 
 
@@ -42,7 +42,7 @@ async def asyncify(callback: Callable):
 
 
 async def refresh_sink_inputs(sink_inputs_db: PulseSinkInputsDb, pulse_client: PulseAsync):
-    sink_inputs_db.refresh(await pulse_client.sink_input_list())
+    await sink_inputs_db.refresh(await pulse_client.sink_input_list())
 
 
 async def refresh_sinks(sinks_db: PulseSinksDb, pulse_client: PulseAsync):
@@ -96,7 +96,6 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
     ctrl.bind_control_change(program.get_pad(3), lambda msg: send_if_not_0(msg, rm_cue_3))
     ctrl.bind_control_change(program.get_pad(4), lambda msg: send_if_not_0(msg, rm_cue_4))
 
-    # FIXME: Ensure this is not too loud
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
     cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
 
@@ -109,9 +108,10 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
     speaker_sink = PulseSinks(PulseSinksView(lambda sink: 'Speaker + Headphones' in sink.description,
                                              sinks_db, 'Speaker or jack attachment'), pulse_client)
 
-    spotify_sink_input = PulseSinkInput(re.compile("spotify"), None, sink_inputs_db, pulse_client)
-    crossfader = CrossFader(spotify_sink_input, headset_sink, speaker_sink)
+    spotify_sink_input = PulseSinkInput(re.compile("(spotify|ALSA plug-in)"), None, sink_inputs_db, pulse_client)
+    sink_inputs_db.register_to_change(spotify_sink_input.update)
 
+    crossfader = CrossFader(spotify_sink_input, headset_sink, speaker_sink)
     ctrl.bind_control_change(program.get_knob(1), crossfader.update)
     ctrl.bind_control_change(program.get_knob(5), lambda msg: spotify_sink_input.set_volume(msg.value / 127.))
 
