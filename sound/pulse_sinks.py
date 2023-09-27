@@ -1,6 +1,6 @@
 import logging
 
-from pulsectl import PulseVolumeInfo
+from pulsectl import PulseVolumeInfo, PulseSinkInfo
 from pulsectl_asyncio import PulseAsync
 
 from sound.pulse_sinks_view import PulseSinksView
@@ -26,7 +26,19 @@ class PulseSinks:
             volume = PulseVolumeInfo(percentage, len(s.volume.values))
             await self._pulse_client.sink_volume_set(s.index, volume)
 
-    def get_index(self) -> int:
+    async def set_default(self) -> bool:
+        try:
+            raw_sink = self._get_raw_sink()
+        except SinksCountException as e:
+            logging.warning(f'Failed setting default sink: {e}')
+            return False
+
+        logging.info(f'Setting default sink to {raw_sink}')
+        await self._pulse_client.sink_default_set(raw_sink)
+
+        return True
+
+    def _get_raw_sink(self) -> PulseSinkInfo:
         """
         :return:
         :raise SinksCountException
@@ -39,7 +51,7 @@ class PulseSinks:
         if len(sinks) == 0:
             raise SinksCountException(f'No sink found ({self._sinks_view.description})')
 
-        return int(sinks[0].proplist.get('object.serial'))
+        return sinks[0]
 
     def __str__(self):
         return f"Sinks matching '{self._sinks_view.description}'"

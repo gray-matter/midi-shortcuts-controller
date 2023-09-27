@@ -111,7 +111,7 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
     spotify_sink_input = PulseSinkInput(re.compile("(spotify|ALSA plug-in)"), None, sink_inputs_db, pulse_client)
     sink_inputs_db.register_to_change(spotify_sink_input.update)
 
-    crossfader = CrossFader(spotify_sink_input, headset_sink, speaker_sink)
+    crossfader = CrossFader(headset_sink, speaker_sink)
     ctrl.bind_control_change(program.get_knob(1), crossfader.update)
     ctrl.bind_control_change(program.get_knob(5), lambda msg: spotify_sink_input.set_volume(msg.value / 127.))
 
