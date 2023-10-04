@@ -20,7 +20,7 @@ class WindowFocuser(Focuser):
     async def focus(self) -> bool:
         search_description = f'class {self._window_class_pattern.pattern}'
         if self._window_name_pattern is not None:
-            search_description += ' and name {self._window_name_pattern.pattern}'
+            search_description += f' and name {self._window_name_pattern.pattern}'
 
         def is_target_window(w: Window):
             return (self._window_class_pattern is None or self._window_class_pattern.search(w.wm_class)) and \
