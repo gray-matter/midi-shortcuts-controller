@@ -21,8 +21,12 @@ class PulseSinks:
         """
         logging.debug(f'Setting volume to {percentage} for {self}')
 
-        # FIXME: Warn when no result
-        for s in self._sinks_view.get():
+        sinks = self._sinks_view.get()
+
+        if len(sinks) == 0:
+            logging.info(f'No sink matched for {self._sinks_view}')
+
+        for s in sinks:
             volume = PulseVolumeInfo(percentage, len(s.volume.values))
             await self._pulse_client.sink_volume_set(s.index, volume)
 
