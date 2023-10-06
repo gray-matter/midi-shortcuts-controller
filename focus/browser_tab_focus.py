@@ -62,7 +62,7 @@ class BrowserTabFocuser(Focuser):
 
     def _find_tab(self, browser_id: str) -> Optional[str]:
         for tab_id, tab_name in BrowserTabFocuser._list_tabs(browser_id).items():
-            if self._tab_regex.match(tab_name):
+            if self._tab_regex.search(tab_name):
                 return tab_id
 
         return None

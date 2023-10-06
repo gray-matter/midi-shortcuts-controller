@@ -125,11 +125,19 @@ def bind_work_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksD
                                                                re.compile('.*SpatialChat')),
                                                  [uinput.KEY_PAUSECD], [uinput.KEY_LEFTCTRL, uinput.KEY_E]))
 
+    # TODO: Match small Zoom window
     zoom_toggle_mute = WindowInput(WindowFocuser(re.compile("zoom"), re.compile("Zoom Meeting")),
                                    [uinput.KEY_PAUSECD], [uinput.KEY_LEFTALT, uinput.KEY_Q])
 
+    teams_mute = BrowserInput(BrowserTabFocuser(re.compile('firefox'), re.compile('Microsoft Teams')),
+                              WindowInput(WindowFocuser(re.compile('Navigator\\.firefox'),
+                                                        re.compile('.*Microsoft Teams')),
+                                          [uinput.KEY_PAUSECD],
+                                          [uinput.KEY_LEFTCTRL, uinput.KEY_LEFTSHIFT, uinput.KEY_SEMICOLON]))
+
     ctrl.bind_note_on(program.get_pad(1), lambda msg: zoom_toggle_mute.send())
     ctrl.bind_note_on(program.get_pad(2), lambda msg: spatial_chat_mute.send())
+    ctrl.bind_note_on(program.get_pad(3), lambda msg: teams_mute.send())
 
     media_next = WindowInput(NoFocuser(), [uinput.KEY_NEXTSONG])
     media_previous = WindowInput(NoFocuser(), [uinput.KEY_PREVIOUSSONG])
