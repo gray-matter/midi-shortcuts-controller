@@ -56,7 +56,7 @@ class PulseSinkInput:
         sink_inputs = self._get_matching_sink_inputs()
 
         if len(sink_inputs) == 0:
-            logging.warning(f'Could not find sink for app "{self._app_name_pattern.pattern}"')
+            logging.warning(f'Could not find sink for {self}')
 
         for sink in sink_inputs:
             volume_info = PulseVolumeInfo(percentage, len(sink.volume.values))
