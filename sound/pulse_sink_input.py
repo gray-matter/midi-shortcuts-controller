@@ -24,6 +24,7 @@ class PulseSinkInput:
         """
         :param percentage: Between 0 and 1
         """
+        logging.debug(f'Setting volume for {self} to {percentage * 100}%')
         self._current_volume = percentage
         await self._set_volume(percentage)
 
@@ -42,7 +43,10 @@ class PulseSinkInput:
             return True
 
     async def update(self) -> None:
+        logging.debug(f'Updating {self} (current volume = {self._current_volume})')
         if self._current_volume is not None:
+            logging.info(f'Setting volume for {self} to {self._current_volume * 100}%')
+            # FIXME: Does not seem to work when Spotify not running, then starts running
             await self._set_volume(self._current_volume)
 
     def _matches(self, source: PulseSinkInputInfo) -> bool:
@@ -61,7 +65,7 @@ class PulseSinkInput:
         for sink in sink_inputs:
             volume_info = PulseVolumeInfo(percentage, len(sink.volume.values))
             await self._pulse_client.sink_input_volume_set(sink.index, volume_info)
-            logging.debug(f'Set {sink.name} volume to {percentage}%')
+            logging.debug(f'Set {sink.name} volume to {percentage * 100}%')
 
     def _get_matching_sink_inputs(self) -> List[PulseSinkInputInfo]:
         return list(filter(self._matches, self._sink_inputs_db.get()))

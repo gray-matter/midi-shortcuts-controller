@@ -19,7 +19,7 @@ class PulseSinks:
         """
         :param percentage: Between 0 and 1
         """
-        logging.debug(f'Setting volume to {percentage} for {self}')
+        logging.debug(f'Setting volume to {percentage * 100}% for {self}')
 
         sinks = self._sinks_view.get()
 
