@@ -145,7 +145,7 @@ def bind_work_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksD
     ctrl.bind_note_on(program.get_pad(6), lambda msg: media_previous.send())
     ctrl.bind_note_on(program.get_pad(7), lambda msg: media_next.send())
 
-    firefox_sink_input = PulseSinkInput(re.compile("Firefox"), re.compile("AudioCallbackDriver"), sink_inputs_db,
+    firefox_sink_input = PulseSinkInput(re.compile("Firefox"), None, sink_inputs_db,
                                         pulse_client)
     ctrl.bind_control_change(program.get_knob(6), lambda msg: firefox_sink_input.set_volume(msg.value / 127.))
 
@@ -162,6 +162,7 @@ def bind_work_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksD
 
     spotify_sink_input = PulseSinkInput(re.compile("spotify"), None, sink_inputs_db, pulse_client)
     ctrl.bind_control_change(program.get_knob(5), lambda msg: spotify_sink_input.set_volume(msg.value / 127.))
+    sink_inputs_db.register_to_change(spotify_sink_input.update)
 
     bind_common(ctrl, program)
 

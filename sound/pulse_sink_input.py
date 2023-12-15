@@ -46,7 +46,6 @@ class PulseSinkInput:
         logging.debug(f'Updating {self} (current volume = {self._current_volume})')
         if self._current_volume is not None:
             logging.info(f'Setting volume for {self} to {self._current_volume * 100}%')
-            # FIXME: Does not seem to work when Spotify not running, then starts running
             await self._set_volume(self._current_volume)
 
     def _matches(self, source: PulseSinkInputInfo) -> bool:
