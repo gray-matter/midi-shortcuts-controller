@@ -98,9 +98,11 @@ def bind_dj_mode(ctrl: MidiController, program: Program, sinks_db: PulseSinksDb,
 
     drum_roll = SoundPlayer(pathlib.Path("media/drum-roll-short.wav"), True)
     cymbals = SoundPlayer(pathlib.Path("media/cymbals-crash-short.wav"))
+    wah_wah = SoundPlayer(pathlib.Path("media/wah-wah.wav"))
 
     ctrl.bind_note_on(program.get_pad(6), lambda msg: asyncify(drum_roll.toggle))
     ctrl.bind_note_on(program.get_pad(7), lambda msg: asyncify(cymbals.play))
+    ctrl.bind_note_on(program.get_pad(8), lambda msg: asyncify(wah_wah.play))
 
     headset_re = re.compile('W[FH]-1000XM')
     headset_sink = PulseSinks(PulseSinksView(lambda sink: headset_re.match(sink.description) is not None, sinks_db,
